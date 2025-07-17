@@ -132,27 +132,42 @@ function resolveConflicts(serverQuotes, localQuotes) {
 // ✅ NEW: Sync All Quotes
 async function syncQuotes() {
   try {
-    const serverQuotes = await fetchQuotesFromServer();
-    const localQuotes = JSON.parse(localStorage.getItem("quotes")) || [];
-    const resolved = resolveConflicts(serverQuotes, localQuotes);
-    quotes = resolved;
-    saveQuotes();
-    populateCategories();
-    filterQuotes();
-    showSyncNotification(`Synced ${serverQuotes.length} quotes from server.`);
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+    const serverQuotes = await res.json();
+    const formatted = serverQuotes.slice(0, 5).map(post => ({
+      text: post.title,
+      category: 'Server'
+    }));
+
+    const unique = formatted.filter(fq => !quotes.some(lq => lq.text === fq.text));
+
+    if (unique.length > 0) {
+      quotes.push(...unique);
+      saveQuotes();
+      populateCategories();
+      notify('Quotes synced with server!'); // ✅ This line should exist
+    }
   } catch (err) {
-    console.error("Sync failed:", err);
-    showSyncNotification("Failed to fetch quotes from server.", true);
+    console.error('Sync error:', err);
+    notify('Failed to sync with server!');
   }
 }
 
-// ✅ NEW: Notification UI
-function showSyncNotification(message, isError = false) {
-  const div = document.getElementById("syncStatus");
-  div.textContent = message;
-  div.style.color = isError ? "red" : "green";
-  setTimeout(() => (div.textContent = ""), 4000);
+function notify(message) {
+  const note = document.createElement('div');
+  note.innerText = message;
+  note.style.position = 'fixed';
+  note.style.top = '10px';
+  note.style.right = '10px';
+  note.style.background = '#4caf50';
+  note.style.color = '#fff';
+  note.style.padding = '10px';
+  note.style.borderRadius = '5px';
+  document.body.appendChild(note);
+  setTimeout(() => note.remove(), 3000);
 }
+
+
 
 // ✅ Init
 document.getElementById("newQuote").addEventListener("click", showRandomQuote);
