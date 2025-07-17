@@ -73,4 +73,76 @@ function importFromJsonFile(event) {
     quotes.push(...importedQuotes);
     saveQuotes();
     populateCategories();
-    alert('Quote
+    alert('Quotes imported successfully!');
+  };
+  fileReader.readAsText(event.target.files[0]);
+}
+
+// Export JSON
+function exportQuotes() {
+  const blob = new Blob([JSON.stringify(quotes, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'quotes.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Post new quote to mock API
+async function postQuoteToServer(quote) {
+  try {
+    await fetch('https://jsonplaceholder.typicode.com/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(quote)
+    });
+    console.log('Quote posted to server.');
+  } catch (err) {
+    console.error('Failed to post quote:', err);
+  }
+}
+
+// Sync quotes from server
+async function fetchQuotesFromServer() {
+  try {
+    const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+    const serverQuotes = await res.json();
+    const formatted = serverQuotes.slice(0, 5).map(post => ({
+      text: post.title,
+      category: 'Server'
+    }));
+    // Conflict resolution: server overrides duplicates
+    const unique = formatted.filter(fq => !quotes.some(lq => lq.text === fq.text));
+    if (unique.length > 0) {
+      quotes.push(...unique);
+      saveQuotes();
+      populateCategories();
+      notify('Quotes synced with server!');
+    }
+  } catch (err) {
+    console.error('Sync error:', err);
+    notify('Failed to sync with server!');
+  }
+}
+
+// UI notification
+function notify(message) {
+  const div = document.createElement('div');
+  div.textContent = message;
+  div.style.background = '#222';
+  div.style.color = '#fff';
+  div.style.padding = '10px';
+  div.style.margin = '10px 0';
+  document.body.prepend(div);
+  setTimeout(() => div.remove(), 3000);
+}
+
+// Run on page load
+window.onload = () => {
+  loadQuotes();
+  populateCategories();
+  showRandomQuote();
+  // Periodic sync every 30 seconds
+  setInterval(fetchQuotesFromServer, 30000);
+};
