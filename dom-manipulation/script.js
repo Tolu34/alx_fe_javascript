@@ -56,6 +56,22 @@ categoryFilter.addEventListener('change', showRandomQuote);
 
 // Initial population
 showRandomQuote();
+function showRandomQuote() {
+  let selectedCategory = categoryFilter.value;
+  let filteredQuotes = selectedCategory === 'all'
+    ? quotes
+    : quotes.filter(quote => quote.category === selectedCategory);
+
+  if (filteredQuotes.length === 0) {
+    quoteDisplay.innerHTML = "<em>No quotes available for this category.</em>";
+    return;
+  }
+
+  const randomIndex = Math.floor(Math.random() * filteredQuotes.length);
+  const quote = filteredQuotes[randomIndex];
+  quoteDisplay.innerHTML = `<p>"${quote.text}"</p><p><strong>— ${quote.category}</strong></p>`;
+}
+
 updateCategoryDropdown();
 
 function updateCategoryDropdown() {
