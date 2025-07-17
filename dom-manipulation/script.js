@@ -94,31 +94,18 @@ function importFromJsonFile(event) {
   reader.readAsText(event.target.files[0]);
 }
 
-// ========== Sync with Simulated Server ==========
-const serverURL = "https://jsonplaceholder.typicode.com/posts"; // Mock server
+// ========== NEW: Server Fetch ==========
 
-function syncWithServer() {
-  fetch(serverURL)
+const serverURL = "https://jsonplaceholder.typicode.com/posts";
+
+function fetchQuotesFromServer() {
+  return fetch(serverURL)
     .then(res => res.json())
     .then(serverData => {
-      const serverQuotes = serverData.slice(0, 5).map(post => ({
+      return serverData.slice(0, 5).map(post => ({
         text: post.title,
         category: "Server"
       }));
-
-      const localData = JSON.parse(localStorage.getItem("quotes")) || [];
-      const mergedQuotes = mergeQuotes(serverQuotes, localData);
-      quotes = mergedQuotes;
-
-      saveQuotes();
-      populateCategories();
-      filterQuotes();
-
-      showSyncNotification(`Synced with server. ${serverQuotes.length} new quotes merged.`);
-    })
-    .catch(err => {
-      showSyncNotification("Failed to sync with server.", true);
-      console.error(err);
     });
 }
 
@@ -144,7 +131,22 @@ function showSyncNotification(message, isError = false) {
   setTimeout(() => (statusDiv.textContent = ""), 4000);
 }
 
-setInterval(syncWithServer, 60000);
+function syncWithServer() {
+  fetchQuotesFromServer()
+    .then(serverQuotes => {
+      const localData = JSON.parse(localStorage.getItem("quotes")) || [];
+      const mergedQuotes = mergeQuotes(serverQuotes, localData);
+      quotes = mergedQuotes;
+      saveQuotes();
+      populateCategories();
+      filterQuotes();
+      showSyncNotification(`Synced with server. ${serverQuotes.length} quotes checked.`);
+    })
+    .catch(err => {
+      showSyncNotification("Failed to sync with server.", true);
+      console.error(err);
+    });
+}
 
 // ========== Init ==========
 document.getElementById("newQuote").addEventListener("click", showRandomQuote);
@@ -153,3 +155,5 @@ window.onload = () => {
   populateCategories();
   filterQuotes();
 };
+
+setInterval(syncWithServer, 60000); // Auto-sync every 60 seconds
